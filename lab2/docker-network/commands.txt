@@ -1,0 +1,22 @@
+# EXECUTED COMMANDS
+
+## 1. Creating the Network
+docker network create lab2-network
+docker network ls
+
+## 2. Creating Containers
+docker run -dit --name lab2-network-server --network lab2-network ubuntu bash
+docker run -dit --name lab2-network-client --network lab2-network ubuntu bash
+docker ps
+
+## 3. Inspecting the Network
+docker network inspect lab2-network
+
+## 4. Server Communication (Inside lab2-network-server)
+python3 --version
+python3 -m http.server 8000
+
+## 5. Client Communication (Inside lab2-network-client)
+apt-get install -y python3
+python3 --version
+python3 -c "import urllib.request; print(urllib.request.urlopen('http://lab2-network-server:8000').read().decode())"

@@ -1,0 +1,49 @@
+# EXECUTED COMMANDS
+
+## 1. Container Layer Data Loss
+docker run -it --name lab2-storage-test ubuntu bash
+# Inside container:
+echo "This data will be lost" > /tmp/test.txt
+cat /tmp/test.txt
+exit
+
+docker rm lab2-storage-test
+docker run -it --name lab2-storage-test-new ubuntu bash
+# Inside container:
+cat /tmp/test.txt
+exit
+
+## 2. Named Volume Persistence
+docker volume create lab2-volume
+docker volume ls
+
+docker run -it --name lab2-volume-test -v lab2-volume:/data ubuntu bash
+# Inside container:
+echo "This data will persist" > /data/test.txt
+cat /data/test.txt
+exit
+
+docker rm lab2-volume-test
+docker run -it --name lab2-volume-test-new -v lab2-volume:/data ubuntu bash
+# Inside container:
+cat /data/test.txt
+exit
+
+## 3. Bind Mount Persistence
+mkdir lab2-bind
+docker run -it --name lab2-bind-test -v "${PWD}\lab2-bind:/data" ubuntu bash
+# Inside container:
+echo "This data is stored on the host" > /data/test.txt
+cat /data/test.txt
+exit
+
+# Verified from Windows host (Powershell):
+dir .\lab2-bind
+Get-Content .\lab2-bind\test.txt
+
+docker rm lab2-bind-test
+
+docker run -it --name lab2-bind-test-new -v "${PWD}\lab2-bind:/data" ubuntu bash
+# Inside container:
+cat /data/test.txt
+exit
