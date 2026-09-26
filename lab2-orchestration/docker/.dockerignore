@@ -1,0 +1,16 @@
+.git
+.gitignore
+lab2/
+lab2-bind/
+lab2-evidence-raw/
+lab2-orchestration/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.venv
+env/
+venv/
+*.pdf
+*.zip

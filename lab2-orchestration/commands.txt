@@ -1,0 +1,52 @@
+# ==============================================================================
+# LAB 2 — CONTAINERIZATION & KUBERNETES ORCHESTRATION COMMAND LOG
+# Repository: https://github.com/heyayushhh/Devops
+# Environment: Windows 11 / Docker Desktop 4.82.0 (v29.6.1) / Kubernetes v1.36.1
+# ==============================================================================
+
+# 1. Environment Verification & Inspection
+docker version
+kubectl version --client
+kubectl cluster-info
+kubectl get nodes
+
+# 2. Repository & Application Inspection
+Get-ChildItem -Recurse | Select-Object FullName, Length
+Get-Content .\app.py, .\login.py, .\.gitignore
+
+# 3. Docker Image Build
+Get-Content .\lab2-orchestration\docker\Dockerfile
+Get-Content .\lab2-orchestration\docker\.dockerignore
+docker build -t lab2-devops-app:latest -f .\lab2-orchestration\docker\Dockerfile .
+
+# 4. Docker Image Verification & Container Execution
+docker images lab2-devops-app:latest
+docker run -d --name lab2-container-test lab2-devops-app:latest
+docker ps --filter "name=lab2-container-test"
+docker logs lab2-container-test
+docker rm -f lab2-container-test
+
+# 5. Kubernetes Orchestration Deployment & Service
+kubectl apply -f .\lab2-orchestration\kubernetes\deployment.yaml
+kubectl apply -f .\lab2-orchestration\kubernetes\service.yaml
+
+# 6. Initial Deployment State Verification (Baseline: 1 Replica)
+kubectl get deployments -o wide
+kubectl get pods -l app=lab2-app -o wide
+kubectl get services lab2-service
+kubectl describe service lab2-service
+kubectl logs -l app=lab2-app
+
+# 7. Scaling Experiment Phase 1 (Scale to 3 Replicas)
+kubectl scale deployment lab2-deployment --replicas=3
+kubectl get deployment lab2-deployment
+kubectl get pods -l app=lab2-app -o wide
+
+# 8. Scaling Experiment Phase 2 (Scale to 5 Replicas)
+kubectl scale deployment lab2-deployment --replicas=5
+kubectl get deployment lab2-deployment
+kubectl get pods -l app=lab2-app -o wide
+
+# 9. Scaling Audit & Resource Description
+kubectl describe deployment lab2-deployment
+kubectl get all -l app=lab2-app

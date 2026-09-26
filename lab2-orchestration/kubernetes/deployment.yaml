@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lab2-deployment
+  labels:
+    app: lab2-app
+    tier: backend
+    experiment: orchestration
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lab2-app
+  template:
+    metadata:
+      labels:
+        app: lab2-app
+        tier: backend
+    spec:
+      containers:
+      - name: devops-container
+        image: lab2-devops-app:latest
+        imagePullPolicy: IfNotPresent
+        resources:
+          limits:
+            cpu: "250m"
+            memory: "128Mi"
+          requests:
+            cpu: "100m"
+            memory: "64Mi"
+        env:
+        - name: APP_ENV
+          value: "production"
+        - name: EXPERIMENT
+          value: "lab2-orchestration"
