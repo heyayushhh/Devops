@@ -1,0 +1,64 @@
+---
+# Lab 3 — app_config role: provisions and configures the demo application
+# on the target nodes. Deterministic, idempotent, no apt required (python:3.12-slim
+# already provides python3; user/group/dir/file modules need nothing extra).
+
+- name: Create lab3app system group
+  ansible.builtin.group:
+    name: lab3app
+    state: present
+
+- name: Create lab3app service user
+  ansible.builtin.user:
+    name: lab3app
+    group: lab3app
+    shell: /usr/sbin/nologin
+    create_home: false
+    state: present
+
+- name: Create application directory layout
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: lab3app
+    group: lab3app
+    mode: "0755"
+  loop:
+    - /opt/lab3app/bin
+    - /etc/lab3app
+    - /var/log/lab3app
+    - /var/run/lab3app
+
+- name: Deploy application configuration (template)
+  ansible.builtin.template:
+    src: app.conf.j2
+    dest: /etc/lab3app/app.conf
+    owner: lab3app
+    group: lab3app
+    mode: "0640"
+  notify: Restart lab3app
+
+- name: Deploy application code
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: lab3app
+    group: lab3app
+    mode: "{{ item.mode }}"
+  loop:
+    - { src: lab3app.py, dest: /opt/lab3app/bin/app.py, mode: "0755" }
+    - { src: healthcheck.py, dest: /opt/lab3app/bin/healthcheck.py, mode: "0755" }
+    - { src: lab3app-ctl.sh, dest: /opt/lab3app/bin/ctl.sh, mode: "0755" }
+  notify: Restart lab3app
+
+- name: Start (or restart) the lab3app service
+  ansible.builtin.command:
+    cmd: /opt/lab3app/bin/ctl.sh start
+  register: lab3app_start
+  changed_when: lab3app_start.stdout is search("started")
+
+- name: Wait for the health endpoint to come up
+  ansible.builtin.wait_for:
+    host: 127.0.0.1
+    port: "{{ app_port }}"
+    timeout: 15

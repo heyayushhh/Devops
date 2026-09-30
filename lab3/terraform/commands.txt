@@ -1,0 +1,31 @@
+# Lab 3 Terraform Commands Reference
+
+# 1. Initialize Working Directory and Download Provider
+cd lab3/terraform
+..\tools\terraform.exe init
+
+# 2. Validate Configuration
+..\tools\terraform.exe validate
+
+# 3. Plan Initial Infrastructure (2 Replicas)
+..\tools\terraform.exe plan
+
+# 4. Apply Initial Infrastructure (2 Replicas)
+..\tools\terraform.exe apply -auto-approve
+
+# 5. Verify 2 Running Replicas
+docker ps --filter "name=lab3-tf"
+
+# 6. Plan Dynamic Scaling (2 -> 4 Replicas)
+# (Update replica_count = 4 in terraform.tfvars)
+..\tools\terraform.exe plan
+
+# 7. Apply Dynamic Scaling to 4 Replicas
+..\tools\terraform.exe apply -auto-approve
+
+# 8. Verify 4 Running Replicas & Test HTTP Endpoints
+docker ps --filter "name=lab3-tf"
+Invoke-WebRequest -Uri "http://127.0.0.1:8181" -UseBasicParsing
+Invoke-WebRequest -Uri "http://127.0.0.1:8182" -UseBasicParsing
+Invoke-WebRequest -Uri "http://127.0.0.1:8183" -UseBasicParsing
+Invoke-WebRequest -Uri "http://127.0.0.1:8184" -UseBasicParsing

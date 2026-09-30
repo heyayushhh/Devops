@@ -1,0 +1,40 @@
+# Lab 3 Ansible Commands Reference
+
+# 1. Build Controller Image
+docker build -t lab3-ansible-controller:latest lab3/ansible/controller
+
+# 2. Start Target Containers
+docker start lab3-ansible-node1 lab3-ansible-node2
+
+# 3. Ad-Hoc Connectivity Ping
+docker run --rm -e ANSIBLE_CONFIG=/workspace/ansible.cfg \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v "${PWD}/lab3/ansible:/workspace" -w /workspace \
+  lab3-ansible-controller:latest ansible lab3_targets -m ping
+
+# 4. Playbook Syntax Check
+docker run --rm -e ANSIBLE_CONFIG=/workspace/ansible.cfg \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v "${PWD}/lab3/ansible:/workspace" -w /workspace \
+  lab3-ansible-controller:latest ansible-playbook --syntax-check site.yml
+
+# 5. Playbook Run 1 (Apply Changes)
+docker run --rm -e ANSIBLE_CONFIG=/workspace/ansible.cfg \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v "${PWD}/lab3/ansible:/workspace" -w /workspace \
+  lab3-ansible-controller:latest ansible-playbook site.yml
+
+# 6. Playbook Run 2 (Verify Idempotency)
+docker run --rm -e ANSIBLE_CONFIG=/workspace/ansible.cfg \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v "${PWD}/lab3/ansible:/workspace" -w /workspace \
+  lab3-ansible-controller:latest ansible-playbook site.yml
+
+# 7. Target Node Direct Verification
+docker exec lab3-ansible-node1 cat /etc/lab3app/app.conf
+docker exec lab3-ansible-node1 /opt/lab3app/bin/ctl.sh status
+docker exec lab3-ansible-node1 python /opt/lab3app/bin/healthcheck.py
+
+docker exec lab3-ansible-node2 cat /etc/lab3app/app.conf
+docker exec lab3-ansible-node2 /opt/lab3app/bin/ctl.sh status
+docker exec lab3-ansible-node2 python /opt/lab3app/bin/healthcheck.py

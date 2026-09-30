@@ -1,0 +1,6 @@
+---
+# Restart the application when its code or configuration changes.
+# Containers have no systemd; the pidfile-based control script is used instead.
+- name: Restart lab3app
+  ansible.builtin.command:
+    cmd: /opt/lab3app/bin/ctl.sh restart

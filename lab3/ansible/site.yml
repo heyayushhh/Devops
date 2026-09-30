@@ -1,0 +1,19 @@
+---
+# Lab 3 — Q1: Configure infrastructure and automate application configuration
+# Applies the app_config role to the lab3-ansible-node1/2 Docker target nodes.
+# No `become` needed: the target containers run as root and python:3.12-slim
+# does not ship sudo (become would fail there).
+- name: Configure Lab 3 application target nodes
+  hosts: lab3_targets
+  gather_facts: true
+
+  roles:
+    - role: app_config
+
+  post_tasks:
+    - name: Verify the application health endpoint responds on the node
+      ansible.builtin.command:
+        cmd: python /opt/lab3app/bin/healthcheck.py
+      changed_when: false
+      tags:
+        - verify

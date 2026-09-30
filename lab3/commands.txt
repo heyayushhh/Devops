@@ -1,0 +1,96 @@
+================================================================================
+LAB 3 MASTER COMMAND REFERENCE — ANSIBLE & TERRAFORM (IaC)
+================================================================================
+
+================================================================================
+1. GROUND TRUTH & DOCKER VERIFICATION
+================================================================================
+# Check git status
+git status; git branch; git remote -v
+
+# Check Docker status & existing containers
+docker version
+docker ps -a
+docker images
+docker network ls
+
+# Verify safety of existing non-lab3 containers
+docker inspect pathwise-ms2 pathwise-postgres pathwise-redis pathwise-neo4j
+
+================================================================================
+2. Q1 — ANSIBLE AUTOMATION
+================================================================================
+# Step 2.1: Build Ansible Controller Image
+docker build -t lab3-ansible-controller:latest lab3/ansible/controller
+
+# Step 2.2: Ensure target node containers are running on lab3-net
+docker start lab3-ansible-node1 lab3-ansible-node2
+docker ps --filter "name=lab3-ansible-node"
+
+# Step 2.3: Test ad-hoc connectivity (Ansible ping)
+docker run --rm -e ANSIBLE_CONFIG=/workspace/ansible.cfg \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v "${PWD}/lab3/ansible:/workspace" -w /workspace \
+  lab3-ansible-controller:latest ansible lab3_targets -m ping
+
+# Step 2.4: Syntax check Ansible playbook
+docker run --rm -e ANSIBLE_CONFIG=/workspace/ansible.cfg \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v "${PWD}/lab3/ansible:/workspace" -w /workspace \
+  lab3-ansible-controller:latest ansible-playbook --syntax-check site.yml
+
+# Step 2.5: Execute playbook (Initial Run - Applying Changes)
+docker run --rm -e ANSIBLE_CONFIG=/workspace/ansible.cfg \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v "${PWD}/lab3/ansible:/workspace" -w /workspace \
+  lab3-ansible-controller:latest ansible-playbook site.yml
+
+# Step 2.6: Execute playbook (Second Run - Verifying Idempotency)
+docker run --rm -e ANSIBLE_CONFIG=/workspace/ansible.cfg \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v "${PWD}/lab3/ansible:/workspace" -w /workspace \
+  lab3-ansible-controller:latest ansible-playbook site.yml
+
+# Step 2.7: Verify target nodes state directly
+docker exec lab3-ansible-node1 cat /etc/lab3app/app.conf
+docker exec lab3-ansible-node1 /opt/lab3app/bin/ctl.sh status
+docker exec lab3-ansible-node1 python /opt/lab3app/bin/healthcheck.py
+
+docker exec lab3-ansible-node2 cat /etc/lab3app/app.conf
+docker exec lab3-ansible-node2 /opt/lab3app/bin/ctl.sh status
+docker exec lab3-ansible-node2 python /opt/lab3app/bin/healthcheck.py
+
+================================================================================
+3. Q2 — TERRAFORM INFRASTRUCTURE AS CODE (IaC) & SCALING
+================================================================================
+# Step 3.1: Navigate to terraform directory
+cd lab3/terraform
+
+# Step 3.2: Initialize Terraform provider
+..\tools\terraform.exe init
+
+# Step 3.3: Validate configuration files
+..\tools\terraform.exe validate
+
+# Step 3.4: Plan infrastructure provisioning (replica_count = 2)
+..\tools\terraform.exe plan
+
+# Step 3.5: Apply configuration to provision 2 replicas
+..\tools\terraform.exe apply -auto-approve
+
+# Step 3.6: Verify 2 running container replicas
+docker ps --filter "name=lab3-tf"
+
+# Step 3.7: Scale infrastructure to 4 replicas (edit replica_count = 4 in terraform.tfvars)
+# Step 3.8: Plan scaling
+..\tools\terraform.exe plan
+
+# Step 3.9: Apply scaling to 4 replicas
+..\tools\terraform.exe apply -auto-approve
+
+# Step 3.10: Verify 4 active replicas & HTTP health responses
+docker ps --filter "name=lab3-tf"
+curl http://127.0.0.1:8181
+curl http://127.0.0.1:8182
+curl http://127.0.0.1:8183
+curl http://127.0.0.1:8184

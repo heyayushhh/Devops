@@ -1,0 +1,7 @@
+---
+# Per-node and shared defaults (inventory entries override per node)
+app_name: lab3app
+app_env: development
+app_port: 8080
+log_level: info
+greeting: "Hello from Lab 3 (Ansible-configured)"
