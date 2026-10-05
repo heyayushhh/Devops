@@ -1,0 +1,78 @@
+# ==============================================================================
+# LAB 3 MONITORING — COMMANDS EXECUTION LOG
+# Target Application + Prometheus + Grafana Observability Pipeline
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. Environment Inspection
+# ------------------------------------------------------------------------------
+pwd
+git status
+git branch
+git remote -v
+docker version
+docker ps -a
+docker images
+docker network ls
+Get-NetTCPConnection -State Listen | Where-Object { $_.LocalPort -in 3000, 9090, 8000, 8080 }
+
+# ------------------------------------------------------------------------------
+# 2. Application Build
+# ------------------------------------------------------------------------------
+# Build isolated Python target application Docker image
+cd lab3-monitoring
+docker build -t lab3-monitoring-app:latest ./app
+
+# ------------------------------------------------------------------------------
+# 3. Application Deployment & Monitoring Stack Launch
+# ------------------------------------------------------------------------------
+# Build and launch all three services (App, Prometheus, Grafana) via Compose
+docker compose -f docker-compose.yml up --build -d
+
+# Verify running monitoring containers
+docker ps --filter "name=lab3-monitoring-app" --filter "name=lab3-prometheus" --filter "name=lab3-grafana"
+
+# ------------------------------------------------------------------------------
+# 4. Prometheus Verification
+# ------------------------------------------------------------------------------
+# Check Prometheus health endpoint
+Invoke-WebRequest -Uri "http://127.0.0.1:9090/-/healthy" -UseBasicParsing
+
+# Query Prometheus targets API to confirm target state is UP
+Invoke-RestMethod -Uri "http://127.0.0.1:9090/api/v1/targets" | Select-Object -ExpandProperty data
+
+# ------------------------------------------------------------------------------
+# 5. Grafana Verification
+# ------------------------------------------------------------------------------
+# Check Grafana health endpoint
+Invoke-RestMethod -Uri "http://127.0.0.1:3000/api/health"
+
+# Verify provisioned datasources
+Invoke-RestMethod -Uri "http://127.0.0.1:3000/api/datasources"
+
+# Verify provisioned dashboards
+Invoke-RestMethod -Uri "http://127.0.0.1:3000/api/search"
+
+# ------------------------------------------------------------------------------
+# 6. Metric Generation (Traffic Simulator)
+# ------------------------------------------------------------------------------
+# Generate diverse real traffic against endpoints (/, /health, /api/data, /api/error)
+python generate_traffic.py
+
+# ------------------------------------------------------------------------------
+# 7. Verification & Telemetry Audit
+# ------------------------------------------------------------------------------
+# Verify scraped metrics and PromQL evaluations
+python verify_metrics.py
+
+# Query target application endpoints directly
+Invoke-RestMethod -Uri "http://127.0.0.1:8000/"
+Invoke-RestMethod -Uri "http://127.0.0.1:8000/health"
+Invoke-WebRequest -Uri "http://127.0.0.1:8000/metrics" -UseBasicParsing
+
+# ------------------------------------------------------------------------------
+# 8. Safe Cleanup (Lab 3 Monitoring Resources ONLY)
+# Note: NEVER touch PathWise, Lab 2, or Ansible/Terraform resources.
+# ------------------------------------------------------------------------------
+# To stop and remove ONLY Lab 3 monitoring containers and network:
+# docker compose -f lab3-monitoring/docker-compose.yml down
