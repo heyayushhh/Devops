@@ -1,0 +1,141 @@
+================================================================================
+LAB 1: DEVOPS FOUNDATIONS & CONTINUOUS INTEGRATION (JENKINS CI/CD PIPELINE)
+RECORDED EXECUTION COMMANDS & WORKFLOW (Q3 REQUIREMENT)
+Repository: https://github.com/heyayushhh/Devops
+Date: 2026-10-07
+================================================================================
+
+--------------------------------------------------------------------------------
+1. ENVIRONMENT INSPECTION & SAFETY AUDIT
+--------------------------------------------------------------------------------
+# Check current directory and working state
+pwd
+git status
+git branch
+git remote -v
+
+# Inspect repository structure and preserve existing lab components
+dir
+Get-ChildItem -Force
+
+# Verify Docker engine and active container workloads
+docker version
+docker ps -a
+docker images
+docker network ls
+
+# Check Java runtime version
+java -version
+
+--------------------------------------------------------------------------------
+2. JENKINS INFRASTRUCTURE SETUP & CONTAINERIZATION
+--------------------------------------------------------------------------------
+# Create isolated Jenkins workspace directory
+New-Item -ItemType Directory -Force -Path "lab1\jenkins"
+New-Item -ItemType Directory -Force -Path "lab1\screenshots"
+New-Item -ItemType Directory -Force -Path "lab1\reports"
+
+# Pull official Jenkins LTS image
+docker pull jenkins/jenkins:lts
+
+# Build custom Jenkins container image equipped with Python3, Docker CLI, and Git
+docker build -t lab1-jenkins-server:latest lab1/jenkins
+
+# Create dedicated Docker network for Lab 1 CI/CD isolation
+docker network create lab1-jenkins-net
+
+# Launch Jenkins master container with Docker socket mount and port forwarding
+docker run -d `
+  --name lab1-jenkins `
+  --network lab1-jenkins-net `
+  -p 8080:8080 `
+  -p 50000:50000 `
+  -v /var/run/docker.sock:/var/run/docker.sock `
+  -v lab1_jenkins_home:/var/jenkins_home `
+  lab1-jenkins-server:latest
+
+# Verify Jenkins master container health and logs
+docker ps --filter "name=lab1-jenkins"
+docker logs -n 50 lab1-jenkins
+
+--------------------------------------------------------------------------------
+3. GIT SCM CONFIGURATION & REPOSITORY SETUP
+--------------------------------------------------------------------------------
+# Verify git status and check modified/new files
+git status
+
+# Inspect Declarative Jenkinsfile
+Get-Content Jenkinsfile
+
+# Stage Lab 1 implementation files
+git add Jenkinsfile Dockerfile test_app.py lab1/
+
+# Verify local commit history
+git log --oneline --decorate -n 10
+
+--------------------------------------------------------------------------------
+4. APPLICATION BUILD & BYTECODE VALIDATION (LOCAL & PIPELINE)
+--------------------------------------------------------------------------------
+# Local Python bytecode compilation and syntax validation
+python -m compileall .
+
+# Verify exit code
+echo $LASTEXITCODE
+
+--------------------------------------------------------------------------------
+5. AUTOMATED TEST SUITE EXECUTION (LOCAL & PIPELINE)
+--------------------------------------------------------------------------------
+# Execute automated unit test suite with verbose reporting
+python -m unittest test_app.py -v
+
+--------------------------------------------------------------------------------
+6. DOCKER APPLICATION BUILD & ISOLATED DEPLOYMENT
+--------------------------------------------------------------------------------
+# Build application Docker image
+docker build -t lab1-cicd-app:latest .
+
+# Stop and remove any prior deployment container
+docker stop lab1-deployed-app
+docker rm lab1-deployed-app
+
+# Launch application container on port 8085
+docker run -d --name lab1-deployed-app -p 8085:8080 lab1-cicd-app:latest
+
+# Verify deployed container status
+docker ps --filter "name=lab1-deployed-app"
+
+--------------------------------------------------------------------------------
+7. JENKINS PIPELINE EXECUTION & STAGE VERIFICATION
+--------------------------------------------------------------------------------
+# Check Jenkins job status via REST API / UI
+curl -s -u admin:admin123 http://localhost:8080/job/DevOps-CI-CD-Pipeline/api/json
+
+# Trigger pipeline build
+curl -X POST -u admin:admin123 http://localhost:8080/job/DevOps-CI-CD-Pipeline/build
+
+# Monitor build console output
+curl -s -u admin:admin123 http://localhost:8080/job/DevOps-CI-CD-Pipeline/lastBuild/consoleText
+
+--------------------------------------------------------------------------------
+8. APPLICATION HEALTH & ENDPOINT VERIFICATION
+--------------------------------------------------------------------------------
+# Test deployed application HTTP endpoints
+Invoke-WebRequest -Uri "http://localhost:8085" -UseBasicParsing
+curl -i http://localhost:8085
+curl -i http://localhost:8085/app.py
+curl -i http://localhost:8085/login.py
+
+# Check deployed container runtime logs
+docker logs lab1-deployed-app
+
+--------------------------------------------------------------------------------
+9. CLEANUP (TARGETS ONLY LAB 1 RESOURCES)
+--------------------------------------------------------------------------------
+# Safe cleanup commands targeting strictly Lab 1 containers (DO NOT PRUNE)
+docker stop lab1-deployed-app lab1-jenkins
+docker rm lab1-deployed-app lab1-jenkins
+docker network rm lab1-jenkins-net
+
+================================================================================
+END OF RECORDED COMMANDS
+================================================================================
