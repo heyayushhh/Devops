@@ -1,0 +1,115 @@
+================================================================================
+LAB 2 — DOCKER CONTAINERIZATION & CONTAINER MANAGEMENT
+EXACT COMMAND LOG & EXECUTION RUNBOOK
+================================================================================
+
+--------------------------------------------------------------------------------
+PHASE 1: ENVIRONMENT & RESOURCE INSPECTION
+--------------------------------------------------------------------------------
+# 1. Verify Docker Engine & CLI version
+docker --version
+docker version
+
+# 2. Inspect active containers (Ensuring no collision with existing Lab 1/3 & PathWise)
+docker ps -a --format "table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}"
+
+# 3. Inspect existing images
+docker images
+
+# 4. Check Git status and working branch
+git status
+git branch
+
+--------------------------------------------------------------------------------
+PHASE 2: QUESTION 1 — APPLICATION CONTAINERIZATION & IMAGE LAYERS
+--------------------------------------------------------------------------------
+# 1. Navigate to Lab 2 directory
+cd lab2-current
+
+# 2. Review Dockerfile and Application
+cat app/Dockerfile
+cat app/app.py
+cat app/requirements.txt
+
+# 3. Build Docker Image
+docker build -t lab2-q1-app:latest ./app
+
+# 4. Verify Built Docker Image
+docker images lab2-q1-app:latest
+docker image inspect lab2-q1-app:latest --format "Architecture: {{.Architecture}} | OS: {{.Os}} | Size: {{.Size}}"
+
+# 5. Inspect Docker Image Layers Breakdown
+docker history lab2-q1-app:latest
+
+# 6. Run Application Container (Isolated Port 8091)
+docker run -d --name lab2-q1-container -p 8091:8080 lab2-q1-app:latest
+
+# 7. Verify Container Running State & Port Mapping
+docker ps --filter "name=lab2-q1-container"
+
+# 8. Test Application HTTP Response
+curl http://localhost:8091
+# PowerShell equivalent:
+(Invoke-WebRequest -Uri "http://localhost:8091" -UseBasicParsing).Content
+
+--------------------------------------------------------------------------------
+PHASE 3: QUESTION 2 — CONTAINER LIFECYCLE & IMAGE REGISTRY MANAGEMENT
+--------------------------------------------------------------------------------
+# 1. Stop Container
+docker stop lab2-q1-container
+
+# 2. Verify Container Exited State
+docker ps -a --filter "name=lab2-q1-container"
+
+# 3. Restart Container
+docker start lab2-q1-container
+docker ps --filter "name=lab2-q1-container"
+
+# 4. Stop and Remove Lab 2 Container
+docker stop lab2-q1-container
+docker rm lab2-q1-container
+
+# 5. Verify Container Removal
+docker ps -a --filter "name=lab2-q1-container"
+
+# 6. Tag Docker Image for Registry
+docker tag lab2-q1-app:latest heyayushhh/lab2-docker-app:latest
+docker images | grep -E "lab2-q1-app|heyayushhh"
+
+# 7. Attempt Docker Registry Push (Document Authentication Requirement)
+docker push heyayushhh/lab2-docker-app:latest
+
+--------------------------------------------------------------------------------
+PHASE 4: QUESTION 2 — DOCKER COMPOSE MULTI-CONTAINER APPLICATION
+--------------------------------------------------------------------------------
+# 1. Review Docker Compose Configuration
+cat compose/compose.yml
+cat compose/app/app.py
+
+# 2. Deploy Multi-Container Stack (Web App + Redis)
+docker compose -p lab2 -f compose/compose.yml up -d --build
+
+# 3. Verify Compose Service Status
+docker compose -p lab2 -f compose/compose.yml ps
+
+# 4. Test Multi-Container Service Inter-Communication & State Persistence
+# (Multiple requests to verify Redis visit counter increments)
+curl http://localhost:8092
+curl http://localhost:8092
+curl http://localhost:8092
+
+# PowerShell equivalent:
+(Invoke-WebRequest -Uri "http://localhost:8092" -UseBasicParsing).Content
+(Invoke-WebRequest -Uri "http://localhost:8092" -UseBasicParsing).Content
+(Invoke-WebRequest -Uri "http://localhost:8092" -UseBasicParsing).Content
+
+# 5. Compose Lifecycle: Stop Services
+docker compose -p lab2 -f compose/compose.yml stop
+docker compose -p lab2 -f compose/compose.yml ps -a
+
+# 6. Compose Lifecycle: Start Services
+docker compose -p lab2 -f compose/compose.yml start
+docker compose -p lab2 -f compose/compose.yml ps
+
+# 7. Compose Lifecycle: Tear Down Project Resources
+docker compose -p lab2 -f compose/compose.yml down

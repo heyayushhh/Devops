@@ -1,0 +1,25 @@
+services:
+  web:
+    build: ./app
+    container_name: lab2-compose-app
+    ports:
+      - "8092:8080"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - redis
+    networks:
+      - lab2-compose-net
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: lab2-compose-redis
+    networks:
+      - lab2-compose-net
+    restart: unless-stopped
+
+networks:
+  lab2-compose-net:
+    driver: bridge
