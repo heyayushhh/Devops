@@ -1,0 +1,10 @@
+# Lab 3: Centralized Logging - Filebeat Configuration
+# Repository: https://github.com/heyayushhh/Devops
+filebeat.inputs:
+  - type: container
+    paths: ["/var/lib/docker/containers/*/*.log"]
+    processors:
+      - add_docker_metadata: ~
+
+output.logstash:
+  hosts: ["logstash:5044"]

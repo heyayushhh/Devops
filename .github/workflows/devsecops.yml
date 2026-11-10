@@ -1,0 +1,55 @@
+name: Lab 3 DevSecOps & CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  devsecops:
+    name: Security Audits, Tests & Container Verification
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python Dependencies & Security Scanners
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r lab3/app/requirements.txt
+          pip install -r lab3/tests/requirements.txt
+          pip install pip-audit
+
+      - name: Dependency Vulnerability Audit (pip-audit)
+        run: |
+          pip-audit -r lab3/app/requirements.txt
+
+      - name: Run Automated E2E & Unit Tests
+        run: |
+          python -m pytest lab3/tests/e2e -v
+
+      - name: Filesystem Security & Misconfiguration Scan (Trivy)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "fs"
+          scan-ref: "lab3"
+          severity: "HIGH,CRITICAL"
+          exit-code: "0"
+
+      - name: Build Application Container
+        run: |
+          docker build -t lab3-demo-app:latest lab3/app
+
+      - name: Container Image Vulnerability Scan (Trivy)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "lab3-demo-app:latest"
+          severity: "HIGH,CRITICAL"
+          exit-code: "0"

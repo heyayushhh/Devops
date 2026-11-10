@@ -1,0 +1,6 @@
+---
+# Lab 3: Monitoring, Logging & DevSecOps
+# Student: Akash | Roll No: 2301730184 | Email: ad1646414@gmail.com
+application_dir: /opt/lab3-monitoring
+application_repository: https://github.com/Akash2347/Devops-Lab-3.git
+application_version: main
